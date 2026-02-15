@@ -1,4 +1,5 @@
 ---
+name: write-prd
 description: Guide users through creating comprehensive PRDs using JTBD + User Story Mapping + User Journey Mapping methodology. Systematically transform user jobs into structured requirements documents. | 使用「JTBD + 用户故事地图 + 用户旅程图」方法论，系统性地将用户任务转化为结构化的需求文档。
 ---
 

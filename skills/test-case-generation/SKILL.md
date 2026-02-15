@@ -1,7 +1,6 @@
 ---
-name: Test Case Generation
+name: test-case-generation
 description: This skill should be used when the user asks to "generate test cases", "create test cases from UI", "analyze page for testing", "write test cases", or mentions test case generation from web interfaces. Provides UI reverse engineering methodology for automated test case creation.
-version: 0.1.0
 ---
 
 # Test Case Generation Skill
