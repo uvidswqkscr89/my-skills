@@ -1,0 +1,17 @@
+{
+  "name": "my-skills",
+  "description": "Consolidated skills for PRD workflow and Test Case generation",
+  "version": "1.0.0",
+  "author": {
+    "name": "uvidswqkscr89",
+    "email": "uvidswqkscr89@example.com"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/uvidswqkscr89/my-skills.git",
+  "keywords": [
+    "skills",
+    "prd",
+    "test-case",
+    "workflow"
+  ]
+}
