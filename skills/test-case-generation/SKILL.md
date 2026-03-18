@@ -1,6 +1,6 @@
 ---
 name: test-case-generation
-description: This skill should be used when the user asks to "generate test cases", "create test cases from UI", "analyze page for testing", "write test cases", or mentions test case generation from web interfaces. Provides UI reverse engineering methodology for automated test case creation.
+description: This skill should be used when the user asks to "generate test cases", "create test cases from UI", "analyze page for testing", "write test cases", or mentions test case generation from web interfaces. Provides UI reverse engineering methodology for automated test case creation. Works in a shared workspace with test-case-manager: deduplication is always delegated to test-case-manager's semantic-dedup rules, and all test case files are co-located in the same test-cases/ library.
 ---
 
 # Test Case Generation Skill
@@ -8,6 +8,8 @@ description: This skill should be used when the user asks to "generate test case
 ## Purpose
 
 Generate comprehensive, natural language test cases from web interfaces using UI reverse engineering methodology. This skill transforms web page analysis into structured test cases with executable steps, combining browser-based UI exploration with optional PRD (Product Requirements Document) analysis.
+
+This skill operates as the **UI scanning front-end** of a two-skill system. `test-case-manager` is the **library governance back-end**. Both skills share the same `test-cases/` workspace and the same deduplication rules — `test-case-manager`'s `references/semantic-dedup.md` is the single authoritative source for deduplication logic.
 
 ## When to Use This Skill
 
@@ -18,11 +20,49 @@ Use this skill when:
 - Combining PRD requirements with actual UI implementation
 - Producing test cases in both Markdown and CSV formats
 
-## Core Methodology: 5-Step Process
+## Shared Workspace Contract
+
+This skill and `test-case-manager` share the same local workspace:
+
+| Resource | Location | Owner |
+| :------- | :------- | :---- |
+| Test case library root | `{workspace_root}/test-cases/` | `test-case-manager` (authoritative) |
+| File format & TC ID rules | `test-case-manager/references/tc-format.md` | `test-case-manager` |
+| **Deduplication rules** | `test-case-manager/references/semantic-dedup.md` | **`test-case-manager` (sole authority)** |
+| Tree navigation algorithm | `test-case-manager/references/tree-navigation.md` | `test-case-manager` |
+| CRUD change rules | `test-case-manager/references/crud-rules.md` | `test-case-manager` |
+| UI inference rules | `references/control-inference-rules.md` | `test-case-generation` |
+| Output format template | `references/output-format.md` | `test-case-generation` |
+
+> **Rule**: `test-case-generation` must **never implement its own dedup logic**. All deduplication must be performed by reading and applying `test-case-manager/references/semantic-dedup.md`. This ensures scores and thresholds are consistent across both skills.
+
+## Core Methodology: 7-Step Process
 
 Execute these steps in strict sequence, completing each before proceeding to the next.
 
-### Step 1: UI Exploration - Infer User Stories
+> **Library Integration Mode** activates automatically when `{workspace_root}/test-cases/` exists or the user provides a path. Step 7 is then mandatory.
+
+### Step 1: Gather Inputs
+
+**Objective**: Confirm the shared workspace and collect all required inputs before starting analysis.
+
+**Required inputs**:
+- **Target URL**: the page to analyze
+- **Login credentials** (if the page requires authentication)
+
+**Workspace input** (shared with `test-case-manager`):
+- **workspace-root**: the project root that contains the `test-cases/` library directory.
+  - Auto-detect: check if `./test-cases/` exists in the current working directory.
+  - If found: store as `{workspace_root}` and set `{test_cases_root}` = `{workspace_root}/test-cases/`. Library Integration Mode is **ON**.
+  - If not found: ask the user to confirm the path or confirm skip (output Markdown/CSV only).
+  - This same `{workspace_root}` is the workspace used by `test-case-manager`. Both skills must reference the same path.
+
+**Optional inputs**:
+- **PRD content**: paste inline or provide a file path — used for PRD vs. UI comparison
+
+---
+
+### Step 2: UI Exploration - Infer User Stories
 
 **Objective**: Analyze the web page through browser automation to understand user intent.
 
@@ -62,7 +102,7 @@ PRD Comparison (if applicable):
 - Inconsistencies: [Differences between PRD and UI]
 ```
 
-### Step 2: Infer Acceptance Criteria from Controls
+### Step 3: Infer Acceptance Criteria from Controls
 
 **Objective**: Derive validation rules from UI elements.
 
@@ -90,7 +130,7 @@ Feature 2: [Feature description]
   - AC-1: [Acceptance condition]
 ```
 
-### Step 3: Generate Test Cases and Steps
+### Step 4: Generate Test Cases and Steps
 
 **Objective**: Transform user stories and acceptance criteria into structured test cases.
 
@@ -124,7 +164,7 @@ Feature 2: [Feature description]
 - ❌ BDD keywords (Given/When/Then)
 - ❌ Position-based references ("click 3rd button")
 
-### Step 4: Lightweight Review - Identify Gaps
+### Step 5: Lightweight Review - Identify Gaps
 
 **Objective**: Self-check for completeness and clarity.
 
@@ -144,7 +184,7 @@ Feature 2: [Feature description]
    - Mark uncertain acceptance criteria as `[Needs Confirmation]`
    - Mark PRD-UI inconsistencies as `[PRD Discrepancy]`
 
-### Step 5: Prioritize and Output
+### Step 6: Prioritize and Output
 
 **Objective**: Rank test cases and generate final output.
 
@@ -154,6 +194,65 @@ Feature 2: [Feature description]
 - **P2 (Can Defer)**: Boundary conditions, low-frequency operations, UX tests
 
 **Output Format**: See `references/output-format.md` for complete Markdown template structure.
+
+---
+
+### Step 7: Library Integration (Library Integration Mode only)
+
+**Objective**: Persist generated test cases into the local `test-cases/` library using `test-case-manager` logic. **Skip this step entirely if `test-cases-root` was not provided and no `test-cases/` directory was auto-detected.**
+
+#### 7.1 Load existing library state
+
+Read `{test_cases_root}/_index.md` and navigate the tree by following **`test-case-manager/references/tree-navigation.md`** to locate the module that matches the current page or feature being tested.
+
+#### 7.2 Semantic deduplication (delegated to test-case-manager)
+
+> **Critical rule**: Do **not** implement deduplication logic independently. Always read and apply **`test-case-manager/references/semantic-dedup.md`** as the sole scoring authority. This guarantees consistent deduplication results whether the user runs this skill or `test-case-manager` directly.
+
+For each generated test case, apply the scoring algorithm defined in `test-case-manager/references/semantic-dedup.md` against all existing cases in the identified module:
+
+| Score | Decision |
+| :---- | :------- |
+| > 85 | **Already covered** — skip silently |
+| 40–85 | **Possible duplicate** — flag for user confirmation |
+| < 40 | **New / Gap** — include in write set |
+
+#### 7.3 Present confirmation summary
+
+Before writing any file, show the user a structured preview and wait for confirmation:
+
+```
+📋 Library Integration Summary
+──────────────────────────────
+Target module  : {module_path}
+Already covered: {N} test cases (will be skipped)
+Possible duplicates: {K} cases — listed below
+Will be added  : {M} new test cases
+Suggested updates: {U} existing cases with changed intent
+
+[Possible Duplicates — confirm to keep or discard]
+  • TC-XXX: [existing title] ↔ [generated title]
+
+[Cases to be added]
+  1. [title] (type: happy_path | priority: P0)
+  2. ...
+
+[Suggested Updates]
+  • TC-YYY: [change description]
+
+确认写入以上内容？(yes / 调整后再确认 / 仅输出 Markdown 跳过写入)
+```
+
+Support partial confirmation — the user may deselect individual cases before approving.
+
+#### 7.4 Execute writes
+
+After confirmation, apply changes using `test-case-manager` rules:
+- **New cases** → Sub-flow 1 (first ingestion) or Sub-flow 2 (incremental supplement)
+- **Updates** → Sub-flow 3 CRUD diff rules from `test-case-manager/references/crud-rules.md`
+- Assign TC IDs and format files per `test-case-manager/references/tc-format.md`
+- Update `_index.md` entries along the module path
+- Create lock file before write; delete after all writes complete (see `test-case-manager` lock file protocol)
 
 ## Language Adaptation
 
@@ -180,15 +279,23 @@ After generating Markdown output, automatically convert to CSV format using the 
 5. **Mark uncertainties**: Use `[Needs Confirmation]` for any unclear requirements
 6. **Reusable patterns**: Use consistent sentence structures for better AI execution
 7. **Atomic test cases**: One scenario per test case, one action per step
+8. **Library-first by default**: When `test-cases-root` is present (or auto-detected), always run Step 7 (Library Integration). Only skip if the user explicitly requests `--dry-run` or "仅输出 Markdown".
+9. **Gap-fill only**: In Library Integration Mode, the default behavior is to generate and write **only uncovered scenarios**. Only generate already-covered cases if the user explicitly asks to regenerate.
 
 ## Additional Resources
 
 ### Reference Files
 
-For detailed information, consult:
+**Own skill references** (UI generation logic):
 - **`references/control-inference-rules.md`** - Complete control type inference table with examples
 - **`references/output-format.md`** - Full Markdown output template structure
 - **`references/step-patterns.md`** - Comprehensive test step sentence patterns and examples
+
+**Shared references** (from `test-case-manager`, must not be duplicated):
+- **`test-case-manager/references/semantic-dedup.md`** - **Authoritative deduplication scoring rules**
+- **`test-case-manager/references/tc-format.md`** - TC ID assignment and file structure
+- **`test-case-manager/references/tree-navigation.md`** - Library tree navigation algorithm
+- **`test-case-manager/references/crud-rules.md`** - Change classification rules for updates
 
 ### Example Files
 
