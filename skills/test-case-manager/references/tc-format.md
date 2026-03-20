@@ -46,13 +46,37 @@
 - [{模块名}](./{模块路径}/_index.md) — {一句话描述}
 
 ## 用例文件
-- [{功能名}](./{feature}.md) — {一句话描述}
+
+| 文件 | 功能描述 | 用例数 | 最后更新 |
+|:---|:---|:---|:---|
+| [{功能名}](./{feature}.md) | {一句话描述} | {N} | {YYYY-MM-DD} |
+
+---
+
+### [{功能名}](./{feature}.md) — {功能标题}
+
+**正向流程**
+- TC-001: {用例标题} [{优先级}]
+- TC-002: {用例标题} [{优先级}]
+
+**异常流程**
+- TC-100: {用例标题} [{优先级}]
+
+**边界值**
+- TC-200: {用例标题} [{优先级}]
 ```
+
+Rules for the TC title index section:
+- List only the TC ID, title, and priority tag — no steps, no preconditions
+- Omit a category section entirely if it has no test cases
+- Each feature file gets its own `###` subsection under the `---` divider
+- Priority tag format: `[P0]`, `[P1]`, `[P2]`, or `[需确认]` if unconfirmed
 
 ## `_index.md` Update Rules
 
-- Adding a sub-module: append one line to the "子模块" list
-- Adding a feature file: append one line to the "用例文件" list
+- Adding a sub-module: append one row to the "子模块" list
+- Adding a feature file: append one row to the "用例文件" table AND append a new `###` subsection with the TC title index
+- Updating an existing feature file: update the row in the table (用例数, 最后更新) AND sync the TC title index subsection (add/remove/rename entries to match the file)
 - First-time initialization (no `test-cases/` directory): create root `_index.md` with empty lists under both headings
 - Missing intermediate directories: show the full path to be created, wait for user confirmation before creating
 
