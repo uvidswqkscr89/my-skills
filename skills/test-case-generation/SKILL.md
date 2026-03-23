@@ -1,6 +1,6 @@
 ---
 name: test-case-generation
-description: This skill should be used when the user asks to "generate test cases", "create test cases from UI", "analyze page for testing", "write test cases", or mentions test case generation from web interfaces. Provides UI reverse engineering methodology for automated test case creation. Works in a shared workspace with test-case-manager: deduplication is always delegated to test-case-manager's semantic-dedup rules, and all test case files are co-located in the same test-cases/ library.
+description: 'This skill should be used when the user asks to "generate test cases", "create test cases from UI", "analyze page for testing", "write test cases", or mentions test case generation from web interfaces. Provides UI reverse engineering methodology for automated test case creation. Works in a shared workspace with test-case-manager: deduplication is always delegated to test-case-manager''s semantic-dedup rules, and all test case files are co-located in the same test-cases/ library.'
 ---
 
 # Test Case Generation Skill
