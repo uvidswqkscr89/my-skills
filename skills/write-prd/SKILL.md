@@ -377,13 +377,25 @@ Use Given-When-Then or simple Checklist format. Ensure testable and verifiable.
 - [ ] 每条用户故事都有明确的验收标准
 - [ ] 优先级分层清晰（MVP / 增强 / 锦上添花）
 
-**Suggest PRD Validator Agent:**
+**Automated Multi-Perspective Review (review-prd skill):**
 
-If user wants automated validation, suggest:
-> "Would you like me to run the PRD Validator agent to automatically check quality against all methodology standards?"
+After the self-check checklist passes, automatically invoke the `review-prd` skill on the generated `prd.md`:
+- Spawn 4 parallel reviewer subagents (User, Technical, Business, QA)
+- Collect weighted confidence score
+- If score ≥ 0.75 → PRD passes, proceed to Step 8
+- If score < 0.75 → surface revision requests to user, revise PRD, re-run review (max 2 loops)
 
-如果用户需要自动化验证，建议：
-> "是否需要运行 PRD 验证代理，自动检查文档是否符合所有方法论标准？"
+Only mark the PRD complete and proceed to Step 8 after `review-prd` returns PASS.
+
+**自动多视角评审（review-prd skill）：**
+
+自检清单通过后，自动对生成的 `prd.md` 调用 `review-prd` skill：
+- 并行 spawn 4 个评审 subagent（用户侧、技术侧、业务侧、QA 侧）
+- 汇总加权置信度分数
+- 分数 ≥ 0.75 → PRD 通过，进入步骤 8
+- 分数 < 0.75 → 将修改建议反馈给用户，修订后重新评审（最多 2 轮）
+
+只有 `review-prd` 返回 PASS 后，才标记 PRD 完成并进入步骤 8。
 
 ---
 
